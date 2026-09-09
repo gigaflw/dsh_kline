@@ -296,6 +296,7 @@ export async function main(argv = process.argv.slice(2)) {
   const runtimeDirectory = defaultRuntimeDirectory()
   const configuredVenv = String(process.env.DSH_KLINE_VENV || '').trim()
   const configuredPython = String(process.env.DSH_KLINE_PYTHON || '').trim()
+  const packagedRuntime = String(process.env.DSH_KLINE_PACKAGED_RUNTIME || '').trim() === '1'
   const projectVenv = join(PROJECT_ROOT, '.venv')
   const projectPython = pythonPathForVenv(projectVenv)
   const hasProjectRuntime = await pathExists(projectPython)
@@ -306,6 +307,9 @@ export async function main(argv = process.argv.slice(2)) {
     ? projectVenv
     : configuredVenv || (hasProjectRuntime ? projectVenv : join(stateDirectory, 'venv'))
   const managedRuntime = !configuredPythonWorks && (prepareProject || Boolean(configuredVenv) || !hasProjectRuntime)
+  if (packagedRuntime && !configuredPythonWorks) {
+    throw new Error('Packaged runtime requires a working DSH_KLINE_PYTHON; refusing venv creation or dependency installation')
+  }
   let runtimePython = configuredPythonWorks ? configuredPython : pythonPathForVenv(venvDirectory)
   const fingerprint = await requirementsFingerprint()
   const runtimeWorks = await pathExists(runtimePython) && commandPasses(runtimePython, [], IMPORT_CHECK)

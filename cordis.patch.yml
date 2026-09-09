@@ -11,14 +11,17 @@
         command: !!js process.execPath
         args:
           - scripts/run-dsh-kline.mjs
-        cwd: !!js (process.platform === 'win32' && /^\/[A-Za-z]:\//.test(decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname)) && decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname).slice(1)) || decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname)
+        cwd: !!js (process.env.FFT_RUNTIME_ROOT && process.getBuiltinModule('node:path').join(process.env.FFT_RUNTIME_ROOT, 'dependencies', 'bundle', 'node_modules', '@ftshare-lab', 'dsh-kline')) || ((process.platform === 'win32' && /^\/[A-Za-z]:\//.test(decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname)) && decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname).slice(1)) || decodeURIComponent(new URL('./node_modules/@ftshare-lab/dsh-kline/', ctx.baseUrl).pathname))
         env:
           DSH_KLINE_HOST_PID: !!js String(process.pid)
           DSH_KLINE_DEFER_BOOTSTRAP: '1'
-          DSH_KLINE_PYTHON: !!js process.env.DSH_KLINE_PYTHON || ''
           DSH_KLINE_VENV: !!js process.env.DSH_KLINE_VENV || ''
           DSH_KLINE_CACHE_DIR: !!js process.env.DSH_KLINE_CACHE_DIR || ''
           DSH_KLINE_RUNTIME_DIR: !!js process.env.DSH_KLINE_RUNTIME_DIR || ''
+          DSH_KLINE_PACKAGED_RUNTIME: !!js process.env.FFT_RUNTIME_ROOT ? '1' : ''
+          DSH_KLINE_PYTHON: !!js (process.env.FFT_RUNTIME_ROOT && process.getBuiltinModule('node:path').join(process.env.FFT_RUNTIME_ROOT, 'python', 'bin', 'python3')) || process.env.DSH_KLINE_PYTHON || ''
+          PYTHONPATH: !!js (process.env.FFT_RUNTIME_ROOT && process.getBuiltinModule('node:path').join(process.env.FFT_RUNTIME_ROOT, 'python', 'site-packages')) || process.env.PYTHONPATH || ''
+          PYTHONNOUSERSITE: '1'
           DSH_KLINE_CHART_HOST: !!js process.env.DSH_KLINE_CHART_HOST || '127.0.0.1'
           DSH_KLINE_CHART_PORT: !!js process.env.DSH_KLINE_CHART_PORT || '8765'
           FTSHARE_SDK_SRC: !!js process.env.FTSHARE_SDK_SRC || ''
