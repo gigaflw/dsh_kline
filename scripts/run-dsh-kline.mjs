@@ -296,7 +296,7 @@ export async function main(argv = process.argv.slice(2)) {
   const runtimeDirectory = defaultRuntimeDirectory()
   const configuredVenv = String(process.env.DSH_KLINE_VENV || '').trim()
   const configuredPython = String(process.env.DSH_KLINE_PYTHON || '').trim()
-  const packagedRuntime = String(process.env.DSH_KLINE_PACKAGED_RUNTIME || '').trim() === '1'
+  const packagedRuntime = Boolean(String(process.env.DSH_KLINE_PACKAGED_RUNTIME || '').trim())
   const projectVenv = join(PROJECT_ROOT, '.venv')
   const projectPython = pythonPathForVenv(projectVenv)
   const hasProjectRuntime = await pathExists(projectPython)
