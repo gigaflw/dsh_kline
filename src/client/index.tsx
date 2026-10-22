@@ -7,6 +7,7 @@ import { isSidebarUsable } from './sidebar-integration'
 import { InterfaceContext, readDisplayMode, resolveDisplayMode } from './mode-preferences'
 import { captureOnboarding } from './ui-onboarding'
 import { registerCanvasHost } from './canvas-panel'
+import { registerPaperTradingHost } from './PaperKlinePanel'
 import type { ClientContext } from './host-services'
 
 export const inject = ['sessions']
@@ -49,6 +50,7 @@ export function apply(ctx: ClientContext) {
   // Optional host panels. Each registers through its own optional scope, so a
   // host without the canvas or the paper-trading slot keeps today's plugin.
   registerCanvasHost(ctx)
+  registerPaperTradingHost(ctx)
 }
 
 function hostRightSidebarAvailable(): boolean {
