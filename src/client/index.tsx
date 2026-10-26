@@ -2,7 +2,6 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { BetterSidebarService } from 'dsh-better-sidebar'
 import type { ClientContext } from './client-context'
-import { currentConversationId } from './conversation'
 import { ClassicShell } from './ClassicShell'
 import { BetterSidebarBridge } from './BetterSidebarTab'
 import { NativeSidebarBridgeView, registerNativeSidebar } from './native-sidebar'
@@ -20,7 +19,6 @@ export function apply(ctx: ClientContext) {
   const listeners = new Set<() => void>()
   const emit = () => listeners.forEach(listener => listener())
   const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } }
-  const subscribeSessions = (listener: () => void) => ctx.sessions.list.subscribe(listener)
   const preference = readDisplayMode()
   captureOnboarding()
   // Registered before the router paints, so the first frame already knows
@@ -29,17 +27,8 @@ export function apply(ctx: ClientContext) {
   function Router() {
     const sidebar = useSyncExternalStore(subscribe, () => service)
     const nativeTab = useSyncExternalStore(subscribe, () => native.available())
-    const conversation = useSyncExternalStore(
-      subscribeSessions,
-      () => currentConversationId(ctx.sessions.list.getSnapshot()),
-    )
     const available = nativeTab || isSidebarUsable(sidebar)
     const mode = resolveDisplayMode(preference, available)
-    // A tab body lives in a Session, so before one exists the chart has no
-    // tab to live in — whichever column the host owns. The classic launcher
-    // covers that screen, which is what the old aria-label probe approximated
-    // and only ever got right in an English UI.
-    const showClassicLauncher = mode === 'classic' || conversation === undefined
     return <InterfaceContext.Provider value={{ preference, mode, available }}>
       {/* The host's own column first: it needs no third-party sidebar. */}
       {nativeTab && mode === 'better-sidebar' && <NativeSidebarBridgeView bridge={native} sessions={ctx.sessions} />}
@@ -47,7 +36,10 @@ export function apply(ctx: ClientContext) {
       {/* Native registration owns the tab kind now; tabs this plugin saved
           under Better Sidebar would render as "plugin not loaded". */}
       {nativeTab && sidebar && <RetireBetterSidebarTabs service={sidebar} />}
-      {showClassicLauncher && <ClassicShell sessions={ctx.sessions} />}
+      {/* The classic floating K is no longer drawn. It survives only as the
+          fallback for a host that offers no right column at all, otherwise the
+          chart would have no entry there. */}
+      {mode === 'classic' && <ClassicShell sessions={ctx.sessions} />}
     </InterfaceContext.Provider>
   }
   ctx.effect(() => {
