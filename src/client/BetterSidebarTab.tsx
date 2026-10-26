@@ -7,7 +7,8 @@ import { InterfaceContext, readAutoOpen } from './mode-preferences'
 import { KLINE_TAB_ID, klineTabTitle, migrateKlineTabTitle } from './sidebar-integration'
 import { installDefaultKlineTabs } from './default-tab'
 
-function KlineTabContent({ sessions, conversationId }: { sessions: Sessions; conversationId?: string }) {
+/** The chart itself, shared by every host tab: Better Sidebar and the native one. */
+export function KlineTabContent({ sessions, conversationId }: { sessions: Sessions; conversationId?: string }) {
   // Better Sidebar preserves a tab and its previous scope on the host's
   // New Session screen. Never promote an already-present chart from that
   // scope: only an analysis result that arrives while this view is live may

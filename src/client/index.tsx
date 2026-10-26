@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import type { BetterSidebarService } from 'dsh-better-sidebar'
 import { ClassicShell } from './ClassicShell'
 import { BetterSidebarBridge } from './BetterSidebarTab'
+import { NativeSidebarBridgeView, registerNativeSidebar } from './native-sidebar'
 import { isSidebarUsable } from './sidebar-integration'
 import { InterfaceContext, readDisplayMode, resolveDisplayMode } from './mode-preferences'
 import { captureOnboarding } from './ui-onboarding'
@@ -15,19 +16,26 @@ export function apply(ctx: ClientContext) {
   let service: BetterSidebarService | undefined
   const listeners = new Set<() => void>()
   const emit = () => listeners.forEach(listener => listener())
+  const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } }
   const preference = readDisplayMode()
   captureOnboarding()
+  // Registered before the router paints, so the first frame already knows
+  // whether the host owns a right column this plugin can tab into.
+  const native = registerNativeSidebar(ctx, emit)
   function Router() {
-    const sidebar = useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener) } }, () => service)
+    const sidebar = useSyncExternalStore(subscribe, () => service)
+    const nativeTab = useSyncExternalStore(subscribe, () => native.available())
     const hostHasRightSidebar = useHostRightSidebar()
-    const available = isSidebarUsable(sidebar)
+    const available = nativeTab || isSidebarUsable(sidebar)
     const mode = resolveDisplayMode(preference, available)
     // Better Sidebar does not create a right-side container on the host's
     // New Session screen. Keep the classic K launcher there even when the
     // user prefers native tabs, so the plugin never loses its first entry.
     const showClassicLauncher = mode === 'classic' || !hostHasRightSidebar
     return <InterfaceContext.Provider value={{ preference, mode, available }}>
-      {sidebar && <BetterSidebarBridge service={sidebar} sessions={ctx.sessions} />}
+      {/* The host's own column first: it needs no third-party sidebar. */}
+      {nativeTab && <NativeSidebarBridgeView bridge={native} sessions={ctx.sessions} />}
+      {!nativeTab && sidebar && <BetterSidebarBridge service={sidebar} sessions={ctx.sessions} />}
       {showClassicLauncher && <ClassicShell sessions={ctx.sessions} />}
     </InterfaceContext.Provider>
   }

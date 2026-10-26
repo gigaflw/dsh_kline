@@ -73,7 +73,7 @@ test('UI entry is text only, remains visible on narrow screens, and retains the 
 })
 test('classic mode and the host New Session launcher keep the K button while the native tab remains available without auto-opening', () => {
   const router = readFileSync(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
-  assert.match(router, /\{sidebar && <BetterSidebarBridge service=\{sidebar\} sessions=\{ctx\.sessions\} \/>\}/)
+  assert.match(router, /\{!nativeTab && sidebar && <BetterSidebarBridge service=\{sidebar\} sessions=\{ctx\.sessions\} \/>\}/)
   assert.match(router, /function hostRightSidebarAvailable\(\): boolean/)
   assert.match(router, /Open right sidebar/)
   assert.match(router, /Collapse right sidebar/)
