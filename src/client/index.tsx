@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { BetterSidebarService } from 'dsh-better-sidebar'
 import { ClassicShell } from './ClassicShell'
@@ -25,18 +25,16 @@ export function apply(ctx: ClientContext) {
   function Router() {
     const sidebar = useSyncExternalStore(subscribe, () => service)
     const nativeTab = useSyncExternalStore(subscribe, () => native.available())
-    const hostHasRightSidebar = useHostRightSidebar()
     const available = nativeTab || isSidebarUsable(sidebar)
     const mode = resolveDisplayMode(preference, available)
-    // Better Sidebar does not create a right-side container on the host's
-    // New Session screen. Keep the classic K launcher there even when the
-    // user prefers native tabs, so the plugin never loses its first entry.
-    const showClassicLauncher = mode === 'classic' || !hostHasRightSidebar
     return <InterfaceContext.Provider value={{ preference, mode, available }}>
       {/* The host's own column first: it needs no third-party sidebar. */}
       {nativeTab && <NativeSidebarBridgeView bridge={native} sessions={ctx.sessions} />}
       {!nativeTab && sidebar && <BetterSidebarBridge service={sidebar} sessions={ctx.sessions} />}
-      {showClassicLauncher && <ClassicShell sessions={ctx.sessions} />}
+      {/* The classic floating K is no longer drawn. It survives only as the
+          fallback for a host that offers no right column at all, otherwise the
+          chart would have no entry there. */}
+      {mode === 'classic' && <ClassicShell sessions={ctx.sessions} />}
     </InterfaceContext.Provider>
   }
   ctx.effect(() => {
@@ -61,22 +59,3 @@ export function apply(ctx: ClientContext) {
   registerPaperTradingHost(ctx)
 }
 
-function hostRightSidebarAvailable(): boolean {
-  const control = document.querySelector<HTMLElement>('[aria-label="Open right sidebar"], [aria-label="Collapse right sidebar"]')
-  if (!control) return false
-  const style = window.getComputedStyle(control)
-  const bounds = control.getBoundingClientRect()
-  return style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0
-}
-
-function useHostRightSidebar(): boolean {
-  const [available, setAvailable] = useState(hostRightSidebarAvailable)
-  useEffect(() => {
-    const refresh = () => setAvailable(hostRightSidebarAvailable())
-    refresh()
-    const observer = new MutationObserver(refresh)
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
-  }, [])
-  return available
-}
