@@ -35,12 +35,12 @@ test('auto-open is independent from display mode', () => {
   assert.equal(readAutoOpen(s), false)
   assert.equal(readAutoOpen(storage()), true)
 })
-test('first-install and legacy users receive different onboarding', () => {
+test('a fresh install opens with no dialog; only a returning user gets the one-time notice', () => {
   assert.equal(hasPreviousUsage(storage()), false)
   for (const entry of [{'dsh_kline_welcome_seen_v1':'1'}, {'dsh-kline:conversation:A':'{}'}, {'dsh-kline.workspace.v1':'{}'}]) {
     assert.equal(hasPreviousUsage(storage(entry)), true)
   }
-  assert.equal(classifyOnboarding(storage(), false), 'first')
+  assert.equal(classifyOnboarding(storage(), false), 'none')
   assert.equal(classifyOnboarding(storage(), true), 'upgrade')
 })
 test('acknowledging onboarding is once per device and does not erase chart or key state', () => {
