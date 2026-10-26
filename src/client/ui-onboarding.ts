@@ -15,20 +15,29 @@ export function hasPreviousUsage(storage: Storage): boolean {
 export function captureOnboarding(storage = globalThis.localStorage) {
   existingUser ??= hasPreviousUsage(storage)
 }
-export function onboardingKind(storage = globalThis.localStorage): 'upgrade' | 'first' | 'none' {
+export function onboardingKind(storage = globalThis.localStorage): 'upgrade' | 'none' {
   captureOnboarding(storage)
   return classifyOnboarding(storage, existingUser === true)
 }
-export function classifyOnboarding(storage: Storage, previousUsage: boolean): 'upgrade' | 'first' | 'none' {
+/**
+ * Only a returning user gets a one-time notice.
+ *
+ * A fresh install gets no dialog at all: the chart opens straight into its
+ * workspace, because the first-run welcome that used to pitch the FTShare key
+ * is gone.
+ */
+export function classifyOnboarding(storage: Storage, previousUsage: boolean): 'upgrade' | 'none' {
   try {
     if (storage.getItem(UI_SEEN_KEY)) return 'none'
-    return previousUsage ? 'upgrade' : 'first'
+    return previousUsage ? 'upgrade' : 'none'
   } catch { return 'none' }
 }
 export function acknowledgeOnboarding(storage = globalThis.localStorage) {
   try {
     storage.setItem(UI_SEEN_KEY, '1')
     storage.setItem(ONBOARDING_KEY, '0.2.0')
+    // Legacy marker: older builds keyed their first-run welcome on it, and it
+    // still tells `hasPreviousUsage` that this browser has been used before.
     storage.setItem('dsh_kline_welcome_seen_v1', '1')
   } catch {}
 }
