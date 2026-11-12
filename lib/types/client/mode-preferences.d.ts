@@ -9,5 +9,5 @@ export interface InterfaceState {
 }
 export declare const InterfaceContext: import("react").Context<InterfaceState>;
 export declare function readDisplayMode(storage?: Storage): DisplayMode;
-export declare function resolveDisplayMode(preference: DisplayMode, available: boolean): InterfaceState['mode'];
+export declare function resolveDisplayMode(_preference: DisplayMode, available: boolean): InterfaceState['mode'];
 export declare function readAutoOpen(storage?: Storage): boolean;
