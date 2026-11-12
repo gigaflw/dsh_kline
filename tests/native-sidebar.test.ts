@@ -188,8 +188,10 @@ test('the body only mounts the active conversation in Tab mode and passes visibi
   assert.ok(!nativeSource.includes('{visible && <KlineTabContent'))
 })
 
-test('the launcher follows Sessions, not the host UI language, and auto-open stays in tab mode', () => {
-  assert.match(router, /const showClassicLauncher = mode === 'classic' \|\| conversation === undefined/)
+test('the classic launcher is drawn only without a right column; auto-open stays in tab mode', () => {
+  // The FT build retires the floating K: a host with a right column always
+  // gets the tab, so only a host without one falls back to the classic shell.
+  assert.match(router, /\{mode === 'classic' && <ClassicShell sessions=\{ctx\.sessions\} \/>\}/)
   assert.match(router, /\{nativeTab && mode === 'better-sidebar' && <NativeSidebarBridgeView bridge=\{native\} sessions=\{ctx\.sessions\} \/>\}/)
   assert.ok(!router.includes('hostRightSidebarAvailable'))
   assert.ok(!router.includes('Open right sidebar'))

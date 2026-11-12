@@ -9,14 +9,17 @@ export const InterfaceContext = createContext<InterfaceState>({ preference: 'cla
 export function readDisplayMode(storage = globalThis.localStorage): DisplayMode {
   try {
     const value = storage.getItem(DISPLAY_MODE_KEY)
-    return value === 'better-sidebar' ? value : 'classic'
-  } catch { return 'classic' }
+    // The right-column tab is the default now that the classic K launcher is
+    // gone; a stored preference is kept only so an older profile keeps reading.
+    return value === 'classic' || value === 'better-sidebar' ? value : 'auto'
+  } catch { return 'auto' }
 }
-export function resolveDisplayMode(preference: DisplayMode, available: boolean): InterfaceState['mode'] {
-  // A chart should be available before a new DSH conversation has created a
-  // workbench session. The native tab is therefore opt-in; the classic K
-  // launcher remains the dependable default.
-  return preference === 'better-sidebar' && available ? 'better-sidebar' : 'classic'
+export function resolveDisplayMode(_preference: DisplayMode, available: boolean): InterfaceState['mode'] {
+  // A host with a right column always gets the tab: there is no floating
+  // launcher left to fall back to, so a stored "classic" must not strand the
+  // chart. The classic value survives only for a host that offers no right
+  // column at all (see index.tsx, which then draws the classic shell).
+  return available ? 'better-sidebar' : 'classic'
 }
 export function readAutoOpen(storage = globalThis.localStorage): boolean {
   try { return storage.getItem(AUTO_OPEN_KEY) !== 'false' } catch { return true }

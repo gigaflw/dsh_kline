@@ -15,15 +15,18 @@ function storage(initial: Record<string, string> = {}): Storage {
     removeItem: key => { data.delete(key) }, clear: () => data.clear() }
 }
 for (const preference of ['auto', 'classic', 'better-sidebar'] as const) {
-  for (const available of [false, true]) test(`${preference}, sidebar ${available}: one deterministic shell`, () => {
-    assert.equal(resolveDisplayMode(preference, available), available && preference === 'better-sidebar' ? 'better-sidebar' : 'classic')
+  for (const available of [false, true]) test(`${preference}, right column ${available}: one deterministic shell`, () => {
+    // A host with a right column always gets the tab: a stored classic
+    // preference must not strand a chart whose floating launcher is gone.
+    assert.equal(resolveDisplayMode(preference, available), available ? 'better-sidebar' : 'classic')
   })
 }
-test('missing, corrupt and inaccessible preference storage safely defaults to classic', () => {
-  assert.equal(readDisplayMode(storage()), 'classic')
-  assert.equal(readDisplayMode(storage({[DISPLAY_MODE_KEY]: 'unknown'})), 'classic')
-  assert.equal(readDisplayMode({getItem() { throw Error('denied') }} as unknown as Storage), 'classic')
+test('missing, corrupt and inaccessible preference storage safely defaults to auto', () => {
+  assert.equal(readDisplayMode(storage()), 'auto')
+  assert.equal(readDisplayMode(storage({[DISPLAY_MODE_KEY]: 'unknown'})), 'auto')
+  assert.equal(readDisplayMode({getItem() { throw Error('denied') }} as unknown as Storage), 'auto')
   assert.equal(readDisplayMode(storage({[DISPLAY_MODE_KEY]: 'better-sidebar'})), 'better-sidebar')
+  assert.equal(readDisplayMode(storage({[DISPLAY_MODE_KEY]: 'classic'})), 'classic')
 })
 test('auto-open is independent from display mode', () => {
   const s = storage({[DISPLAY_MODE_KEY]: 'classic', [AUTO_OPEN_KEY]: 'false'})
@@ -32,12 +35,12 @@ test('auto-open is independent from display mode', () => {
   assert.equal(readAutoOpen(s), false)
   assert.equal(readAutoOpen(storage()), true)
 })
-test('first-install and legacy users receive different onboarding', () => {
+test('a fresh install opens with no dialog; only a returning user gets the one-time notice', () => {
   assert.equal(hasPreviousUsage(storage()), false)
   for (const entry of [{'dsh_kline_welcome_seen_v1':'1'}, {'dsh-kline:conversation:A':'{}'}, {'dsh-kline.workspace.v1':'{}'}]) {
     assert.equal(hasPreviousUsage(storage(entry)), true)
   }
-  assert.equal(classifyOnboarding(storage(), false), 'first')
+  assert.equal(classifyOnboarding(storage(), false), 'none')
   assert.equal(classifyOnboarding(storage(), true), 'upgrade')
 })
 test('acknowledging onboarding is once per device and does not erase chart or key state', () => {
@@ -73,18 +76,18 @@ test('UI entry is text only, remains visible on narrow screens, and retains the 
   assert.match(tab, /visible && interfaceState\.mode === 'better-sidebar'/)
   assert.match(tab, /liveChartFor\(sessions, conversationId\)/)
 })
-test('the classic launcher covers screens without a Session; the native path only auto-opens in tab mode', () => {
+test('the classic K launcher is drawn only for a host without any right column', () => {
   const router = readFileSync(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
   assert.match(router, /\{!nativeTab && sidebar && <BetterSidebarBridge service=\{sidebar\} sessions=\{ctx\.sessions\} \/>\}/)
-  // A tab body lives in a Session, so the launcher has to cover the rest.
-  assert.match(router, /const showClassicLauncher = mode === 'classic' \|\| conversation === undefined/)
+  // The classic K launcher survives only as the fallback for a host that offers
+  // no right column at all.
+  assert.match(router, /\{mode === 'classic' && <ClassicShell sessions=\{ctx\.sessions\} \/>\}/)
   // Auto-open belongs to the tab interface, not to a classic-preferring user.
   assert.match(router, /\{nativeTab && mode === 'better-sidebar' && <NativeSidebarBridgeView bridge=\{native\} sessions=\{ctx\.sessions\} \/>\}/)
   // Availability comes from the services, never from the host's UI language.
   assert.ok(!router.includes('hostRightSidebarAvailable'))
   assert.ok(!router.includes('Open right sidebar'))
   assert.ok(!router.includes('Collapse right sidebar'))
-  assert.match(router, /\{showClassicLauncher && <ClassicShell sessions=\{ctx\.sessions\} \/>\}/)
   // Native takes the kind over, so saved Better Sidebar tabs are retired.
   assert.match(router, /cleanClassicTabs\(service\)/)
 })
